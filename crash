@@ -1,0 +1,79 @@
+local LP, Players = game:GetService('Players').LocalPlayer, game:GetService('Players')
+
+local function GetLayeredAssets(Char)
+    local Assets, Char = {}, assert(typeof(Char) == 'Instance' and Char:IsA('Model'), 'invalid argument #1 to \'GetLayeredAssets\' (Instance [Character] expected, got: '..tostring(typeof(Char)..(tostring(typeof(Char) == 'Instance' and ', '..Char.ClassName or '')..')'))) and Char or nil
+    
+    for _, v in next, Char:GetChildren() do
+        if v:IsA('Accessory') and v:FindFirstChild('Handle') and (v.Handle:FindFirstChild('SurfaceAppearance') or v.Handle:FindFirstChildOfClass('WrapLayer')) then
+            table.insert(Assets, v)
+        end
+    end
+    
+    return Assets
+end
+
+local function Get(Object, Name)
+    local Result = Object:FindFirstChild(Name)
+    
+    if Result then
+        return Result
+    end
+end
+
+if LP and LP.Character and LP.Character.Parent and LP.Character:FindFirstChildOfClass('Humanoid') then
+    local LC, Hum = LP.Character, LP.Character:FindFirstChildOfClass('Humanoid')
+    local LayeredAssets, RP, UpperTorso, LowerTorso, Waist = LC and GetLayeredAssets(LC) or {}, LC:FindFirstChild('HumanoidRootPart'), LC:FindFirstChild('UpperTorso'), LC:FindFirstChild('LowerTorso'), LC:FindFirstChild('Waist', true)
+    
+    if #LayeredAssets > 0 and Hum.RigType == Enum.HumanoidRigType.R15 then
+        workspace.CurrentCamera.CameraSubject = RP
+        
+        if Waist then
+            Waist:Destroy()
+            
+            wait()
+            
+            UpperTorso.CFrame = UpperTorso.CFrame * CFrame.new(9e9, 9e9, 9e9)
+            UpperTorso.Velocity = Vector3.new(9e9, 9e9, 9e9)
+            
+            RP.CFrame = RP.CFrame * CFrame.new(0, 9e9, 0)
+            
+            wait(.12)
+        end
+        
+        wait()
+        
+        for _, v in next, {Get(LC, 'UpperTorso'), Get(LC, 'LeftLowerArm'), Get(LC, 'RightLowerArm'), Get(LC, 'LeftFoot'), Get(LC, 'RightFoot')} do
+            local Motor = v:FindFirstChildOfClass('Motor6D')
+            
+            if Motor then
+                Motor:Destroy(wait(.1))
+                
+                for i = 1, 10 do
+                    if v.Parent then
+                        v.Velocity = Vector3.new(v.Name:match('^Left') and 9e9 or v.Name:match('^Right') and -9e9, v.Name == 'UpperTorso' and 9e9, v.Name:match('^Left') and 9e9 or v.Name:match('^Right') and -9e9)
+                    end
+                end
+            end
+        end
+        
+        for _, v in next, LayeredAssets do
+            v.Parent = nil
+        end
+        
+        wait(.5)
+        
+        if LC.Parent and Hum.Parent then
+            for _, v in next, LC:GetChildren() do
+                if v:IsA('BasePart') then
+                    v.Velocity = Vector3.new(0, -9e18, 0)
+                end
+            end
+            
+            wait(1)
+            
+            Hum.Health = 0
+        end
+    elseif LayeredAssets == 0 then
+        error('attempt to crash failed (you were not detected wearing any valid layered assets)')
+    end
+end
